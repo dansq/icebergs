@@ -24,7 +24,10 @@ def main():
 	filtered_images = np.empty(x_band1.shape)
 	i = 0
 	for band in x_band1:
-		filtered_images[i] = filters.gaussian(band, preserve_range=True)
+		gaussian = filters.gaussian(band, preserve_range=True)
+		threshold = filters.threshold_otsu(gaussian)
+		mask = gaussian < threshold
+		filtered_images[i] = mask
 		i += 1
 
 	vars = filtered_images.shape
@@ -64,7 +67,10 @@ def huge_predict(filepath, clf, chunksize=4):
         filtered_images = np.empty(x_band1.shape)
         i = 0
         for band in x_band1:
-            filtered_images[i] = filters.gaussian(band, preserve_range=True)
+            gaussian = filters.gaussian(band, preserve_range=True)
+            threshold = filters.threshold_otsu(gaussian)
+            mask = gaussian < threshold
+            filtered_images[i] = mask
             i += 1
 			
         vars = filtered_images.shape
