@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from skimage import io, filters
 from sklearn.svm import SVR
 
 def main():
@@ -19,8 +20,15 @@ def main():
 	print("Xtrain:", X_train.shape)
 	print("Ytrain:", Y_train.shape)
 	print(Y_train)
+	
+	filtered_images = np.empty(x_band1.shape)
+	i = 0
+	for band in x_band1:
+		filtered_images[i] = filters.gaussian(band, preserve_range=True)
+		i += 1
 
-
+	vars = filtered_images.shape
+	d2_train = filtered_images.reshape(vars[0], vars[1] * vars[2])
 	clf = SVR(C=1.0, cache_size=200, coef0=0.0, degree=3, epsilon=0.2,
 			  gamma='auto', kernel='rbf', max_iter=-1, shrinking=True,
 			  tol=0.001, verbose=False)
@@ -36,6 +44,8 @@ def main():
 
 	print(response)
 	print(response.shape)
+	
+	np.savetxt('resultados.csv', response, delimiter=',')
 
 def huge_predict(filepath, clf, chunksize=4):
     reader = pd.read_json(filepath, lines=True, chunksize=chunksize)
@@ -51,6 +61,14 @@ def huge_predict(filepath, clf, chunksize=4):
         test_vars = X_test.shape
         d2_test = X_test.reshape(test_vars[0], test_vars[1] *
                                  test_vars[2] * test_vars[3])
+        filtered_images = np.empty(x_band1.shape)
+        i = 0
+        for band in x_band1:
+            filtered_images[i] = filters.gaussian(band, preserve_range=True)
+            i += 1
+			
+        vars = filtered_images.shape
+        d2_test = filtered_images.reshape(vars[0], vars[1] * vars[2])
         response = clf.predict(d2_test)
         prediction = np.concatenate((prediction, response))
         #i = i + 1
