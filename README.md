@@ -4,4 +4,4 @@ Identificação de icebergs por regressão.
 
 Módulos necessários:
 
-pandas, scikit-learn
+pandas, scikit-learn, scikit-image
