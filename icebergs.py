@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import csv
 from skimage import io, filters
 from sklearn.svm import SVR
 
@@ -16,7 +17,7 @@ def main():
 	Y_train = np.array(train_df["is_iceberg"])
 	vars = X_train.shape
 	d2_train = X_train.reshape(vars[0], vars[1] * vars[2] * vars[3])
-
+	
 	print("Xtrain:", X_train.shape)
 	print("Ytrain:", Y_train.shape)
 	print(Y_train)
@@ -41,20 +42,28 @@ def main():
 	print('treinou')
 
 	#
-	response = huge_predict('test2.json', clf, chunksize=337)
+	response, ids = huge_predict('test2.json', clf, chunksize=337)
 
 	print()
 
 	print(response)
 	print(response.shape)
 	
-	np.savetxt('resultados.csv', response, delimiter=',')
+	export_csv(response, ids)
+	
+	#np.savetxt('resultados.csv', response, delimiter=',')
 
 def huge_predict(filepath, clf, chunksize=4):
     reader = pd.read_json(filepath, lines=True, chunksize=chunksize)
     prediction = np.array([])
+    id = []
     #i = 0
     for chunk in reader:
+		
+		
+        for chk in chunk["id"]:
+            id.append(chk)
+		
         x_band1 = np.array([np.array(band).astype(np.float32).reshape(75, 75)
                             for band in chunk["band_1"]])
         x_band2 = np.array([np.array(band).astype(np.float32).reshape(75, 75)
@@ -80,6 +89,16 @@ def huge_predict(filepath, clf, chunksize=4):
         #i = i + 1
         #if i > 1:
         #    break
-    return prediction
+    return prediction, id
 	
+def export_csv(predictions, ids):
+	assert len(ids) == len(predictions), "ids = %d, prediciton %d" % (len(ids), len(predictions))
+	with open('results.csv', 'w') as csvfile:
+		filewriter = csv.writer(csvfile, delimiter=',',
+								 quotechar='|', quoting=csv.QUOTE_MINIMAL)
+		filewriter.writerow(['id','is_iceberg'])
+		i = 0
+		for entry in predictions:
+			filewriter.writerow([ids[i],entry])
+			i += 1
 main()
