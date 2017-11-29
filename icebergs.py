@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 import csv
 from skimage import io, filters
-from sklearn.svm import SVR
+from sklearn.svm import LinearSVR, SVR
+from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.preprocessing import normalize, StandardScaler, MaxAbsScaler
 
 def main():
 	train_df = pd.read_json('train.json')
@@ -25,6 +27,7 @@ def main():
 	filtered_images = np.empty(x_band1.shape)
 	i = 0
 	for band in x_band1:
+		#normalized_image = normalize(band)
 		gaussian = filters.gaussian(band, preserve_range=True)
 		threshold = filters.threshold_otsu(gaussian)
 		mask = gaussian < threshold
@@ -33,23 +36,46 @@ def main():
 
 	vars = filtered_images.shape
 	d2_train = filtered_images.reshape(vars[0], vars[1] * vars[2])
+	'''
 	clf = SVR(C=1.0, cache_size=200, coef0=0.0, degree=3, epsilon=0.2,
 			  gamma='auto', kernel='rbf', max_iter=-1, shrinking=True,
 			  tol=0.001, verbose=False)
 
+
+	'''
+	'''
+	clf = Ridge(alpha=1.0, copy_X=True, fit_intercept=True, max_iter=None,
+                 normalize=True, random_state=None, solver='auto', tol=0.001)
+	
+	'''
+	'''
+	clf = LogisticRegression(penalty='l2', C=0.0004)
+	'''
+	
+	clf = LinearSVR(epsilon=0.0, tol=0.0001, C=1.0, loss='squared_epsilon_insensitive' , 
+                     fit_intercept=True, intercept_scaling=1.0, dual=True, 
+					 verbose=0, random_state=None, max_iter=1000)
+    
 	clf.fit(d2_train, Y_train)
 	
 	print('treinou')
 
 	#
 	response, ids = huge_predict('test2.json', clf, chunksize=337)
+	
+	max = np.amax(response)
+	min = np.amin(response)
+	new_response = []
+	for line in response:
+		new_response.append((line - min)/(max - min))
+		
 
 	print()
 
-	print(response)
-	print(response.shape)
+	print(new_response)
+	#print(new_response.shape)
 	
-	export_csv(response, ids)
+	export_csv(new_response, ids)
 	
 	#np.savetxt('resultados.csv', response, delimiter=',')
 
@@ -76,6 +102,7 @@ def huge_predict(filepath, clf, chunksize=4):
         filtered_images = np.empty(x_band1.shape)
         i = 0
         for band in x_band1:
+            #normalized_image = normalize(band)
             gaussian = filters.gaussian(band, preserve_range=True)
             threshold = filters.threshold_otsu(gaussian)
             mask = gaussian < threshold
@@ -93,7 +120,7 @@ def huge_predict(filepath, clf, chunksize=4):
 	
 def export_csv(predictions, ids):
 	assert len(ids) == len(predictions), "ids = %d, prediciton %d" % (len(ids), len(predictions))
-	with open('results.csv', 'w') as csvfile:
+	with open('resultslinearSVR.csv', 'w') as csvfile:
 		filewriter = csv.writer(csvfile, delimiter=',',
 								 quotechar='|', quoting=csv.QUOTE_MINIMAL)
 		filewriter.writerow(['id','is_iceberg'])
@@ -101,4 +128,5 @@ def export_csv(predictions, ids):
 		for entry in predictions:
 			filewriter.writerow([ids[i],entry])
 			i += 1
+			
 main()
